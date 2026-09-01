@@ -1,7 +1,3 @@
--- Audio Perception System - Executor Script (Enhanced GUI)
--- Client-side script for Roblox exploit/executor.
--- Uses custom sliders, modern UI, and efficient management.
-
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
@@ -13,10 +9,6 @@ if not LocalPlayer then
     warn("Audio Perception System: LocalPlayer not found. Script must run on client.")
     return
 end
-
--- ==============================
--- 1. CREATE SOUND GROUPS
--- ==============================
 
 local GameAudioGroup = Instance.new("SoundGroup")
 GameAudioGroup.Name = "GameAudioGroup"
@@ -34,12 +26,9 @@ local VoiceMaskGroup = Instance.new("SoundGroup")
 VoiceMaskGroup.Name = "VoiceMaskGroup"
 VoiceMaskGroup.Parent = SoundService
 
-local perPlayerGroups = {}       -- userId -> SoundGroup
-local perPlayerBaseVolumes = {}  -- userId -> number (0-1)
-
--- ==============================
--- 2. SOUND CLASSIFICATION AND RELOCATION
--- ==============================
+local perPlayerGroups = {}
+local perPlayerBaseVolumes = {}
+local perPlayerSliderData = {}
 
 local function classifySound(sound)
     local name = sound.Name:lower()
@@ -83,10 +72,6 @@ spawn(function()
     end
 end)
 
--- ==============================
--- 3. CUSTOM SLIDER CLASS
--- ==============================
-
 local Slider = {}
 Slider.__index = Slider
 
@@ -97,13 +82,11 @@ function Slider.new(parent, label, min, max, default, callback)
     self.Value = default
     self.Callback = callback
 
-    -- Container
     self.Container = Instance.new("Frame")
     self.Container.Size = UDim2.new(1, 0, 0, 30)
     self.Container.BackgroundTransparency = 1
     self.Container.Parent = parent
 
-    -- Label
     self.Label = Instance.new("TextLabel")
     self.Label.Size = UDim2.new(0, 80, 1, 0)
     self.Label.BackgroundTransparency = 1
@@ -114,7 +97,6 @@ function Slider.new(parent, label, min, max, default, callback)
     self.Label.TextXAlignment = Enum.TextXAlignment.Left
     self.Label.Parent = self.Container
 
-    -- Slider Background
     self.Background = Instance.new("Frame")
     self.Background.Size = UDim2.new(1, -140, 0, 10)
     self.Background.Position = UDim2.new(0, 80, 0.5, -5)
@@ -126,7 +108,6 @@ function Slider.new(parent, label, min, max, default, callback)
     bgCorner.CornerRadius = UDim.new(0, 5)
     bgCorner.Parent = self.Background
 
-    -- Fill
     self.Fill = Instance.new("Frame")
     self.Fill.Size = UDim2.new(0, 0, 1, 0)
     self.Fill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
@@ -137,7 +118,6 @@ function Slider.new(parent, label, min, max, default, callback)
     fillCorner.CornerRadius = UDim.new(0, 5)
     fillCorner.Parent = self.Fill
 
-    -- Knob
     self.Knob = Instance.new("TextButton")
     self.Knob.Size = UDim2.new(0, 18, 0, 18)
     self.Knob.Position = UDim2.new(0, -9, 0.5, -9)
@@ -151,7 +131,6 @@ function Slider.new(parent, label, min, max, default, callback)
     knobCorner.CornerRadius = UDim.new(1, 0)
     knobCorner.Parent = self.Knob
 
-    -- Value label
     self.ValueLabel = Instance.new("TextLabel")
     self.ValueLabel.Size = UDim2.new(0, 50, 1, 0)
     self.ValueLabel.Position = UDim2.new(1, -50, 0, 0)
@@ -163,10 +142,8 @@ function Slider.new(parent, label, min, max, default, callback)
     self.ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
     self.ValueLabel.Parent = self.Container
 
-    -- Update visual
     self:UpdateVisual()
 
-    -- Dragging logic
     local dragging = false
     local function updateFromMouse(input)
         local relativeX = input.Position.X - self.Background.AbsolutePosition.X
@@ -193,7 +170,6 @@ function Slider.new(parent, label, min, max, default, callback)
         end
     end)
 
-    -- Also allow click on background to set value
     self.Background.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             updateFromMouse(input)
@@ -220,10 +196,6 @@ function Slider:UpdateVisual()
     self.Knob.Position = UDim2.new(percent, -9, 0.5, -9)
 end
 
--- ==============================
--- 4. GUI CONSTRUCTION
--- ==============================
-
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AudioPerceptionGUI"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -249,7 +221,6 @@ MainStroke.Color = Color3.fromRGB(80, 80, 80)
 MainStroke.Thickness = 1
 MainStroke.Parent = MainFrame
 
--- Title bar
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0, 40)
 TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -271,7 +242,6 @@ TitleLabel.TextSize = 18
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TitleBar
 
--- Close button (optional)
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size = UDim2.new(0, 30, 0, 30)
 CloseButton.Position = UDim2.new(1, -35, 0.5, -15)
@@ -291,7 +261,6 @@ CloseButton.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- Content area with scrolling
 local ContentFrame = Instance.new("ScrollingFrame")
 ContentFrame.Size = UDim2.new(1, 0, 1, -40)
 ContentFrame.Position = UDim2.new(0, 0, 0, 40)
@@ -307,7 +276,6 @@ ContentLayout.Padding = UDim.new(0, 10)
 ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 ContentLayout.Parent = ContentFrame
 
--- Helper to create section headers
 local function AddSectionHeader(text)
     local header = Instance.new("TextLabel")
     header.Size = UDim2.new(1, -20, 0, 24)
@@ -323,7 +291,6 @@ local function AddSectionHeader(text)
     return header
 end
 
--- Helper to create a spacing element
 local function AddSpacer(height)
     local spacer = Instance.new("Frame")
     spacer.Size = UDim2.new(1, 0, 0, height)
@@ -332,10 +299,6 @@ local function AddSpacer(height)
     spacer.Parent = ContentFrame
     return spacer
 end
-
--- ==============================
--- 5. GLOBAL AUDIO SLIDERS
--- ==============================
 
 AddSectionHeader("Global Audio")
 
@@ -361,16 +324,11 @@ sfxSlider.Container.LayoutOrder = #ContentLayout:GetChildren()
 
 AddSpacer(10)
 
--- ==============================
--- 6. DISTANCE ENGINE SETTINGS
--- ==============================
-
 AddSectionHeader("Distance Engine")
 
 local distanceEnabled = false
 local maxDistance = 50
 
--- Toggle for distance
 local distanceToggleContainer = Instance.new("Frame")
 distanceToggleContainer.Size = UDim2.new(1, -20, 0, 30)
 distanceToggleContainer.Position = UDim2.new(0, 10, 0, 0)
@@ -409,7 +367,6 @@ distanceToggleButton.MouseButton1Click:Connect(function()
     distanceToggleButton.BackgroundColor3 = distanceEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(150, 50, 50)
 end)
 
--- Max Distance slider
 local maxDistSlider = Slider.new(ContentFrame, "Max Distance", 10, 200, 50, function(val)
     maxDistance = val
 end)
@@ -417,11 +374,19 @@ maxDistSlider.Container.LayoutOrder = #ContentLayout:GetChildren()
 
 AddSpacer(10)
 
--- ==============================
--- 7. MASTER OVERRIDE & SETTINGS
--- ==============================
-
 AddSectionHeader("Master & Safety")
+
+local masterVolumeErrorPrinted = false
+local function setMasterVolumeSafe(value)
+    local success, err = pcall(function()
+        SoundService.MasterVolume = value
+    end)
+    if not success and not masterVolumeErrorPrinted then
+        warn("Could not set MasterVolume: " .. tostring(err))
+        masterVolumeErrorPrinted = true
+    end
+    return success
+end
 
 local masterFixButton = Instance.new("TextButton")
 masterFixButton.Size = UDim2.new(1, -20, 0, 30)
@@ -440,14 +405,12 @@ masterFixCorner.CornerRadius = UDim.new(0, 6)
 masterFixCorner.Parent = masterFixButton
 
 masterFixButton.MouseButton1Click:Connect(function()
-    SoundService.MasterVolume = 1
-    -- Brief visual feedback
+    setMasterVolumeSafe(1)
     masterFixButton.Text = "Fixed!"
     wait(0.5)
     masterFixButton.Text = "Fix Master Volume to 1"
 end)
 
--- Limiter toggle
 local limiterEnabled = false
 local compressor = nil
 
@@ -505,7 +468,6 @@ limiterButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Safety mode toggle
 local safetyMode = true
 
 local safetyToggleContainer = Instance.new("Frame")
@@ -548,10 +510,6 @@ end)
 
 AddSpacer(10)
 
--- ==============================
--- 8. PER-PLAYER MIXER
--- ==============================
-
 AddSectionHeader("Per-Player Volume")
 
 local playersScrolling = Instance.new("ScrollingFrame")
@@ -573,25 +531,21 @@ local playersLayout = Instance.new("UIListLayout")
 playersLayout.Padding = UDim.new(0, 5)
 playersLayout.Parent = playersScrolling
 
--- Function to create a per-player slider inside the scrolling frame
 local function createPerPlayerSlider(player)
     local userId = player.UserId
     if perPlayerGroups[userId] then return end
 
-    -- SoundGroup for this player
     local group = Instance.new("SoundGroup")
     group.Name = "VoiceMask_Player_" .. userId
     group.Parent = SoundService
     perPlayerGroups[userId] = group
     perPlayerBaseVolumes[userId] = 0.5
 
-    -- Container row
     local row = Instance.new("Frame")
     row.Size = UDim2.new(1, 0, 0, 30)
     row.BackgroundTransparency = 1
     row.Parent = playersScrolling
 
-    -- Player name label
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(0, 60, 1, 0)
     nameLabel.BackgroundTransparency = 1
@@ -602,8 +556,6 @@ local function createPerPlayerSlider(player)
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     nameLabel.Parent = row
 
-    -- Slider for this player (using our custom Slider class, but we need to adapt it to fit in row)
-    -- We'll create a simplified slider: background frame, fill, knob, but with fixed width.
     local bg = Instance.new("Frame")
     bg.Size = UDim2.new(1, -70, 0, 10)
     bg.Position = UDim2.new(0, 60, 0.5, -5)
@@ -638,7 +590,6 @@ local function createPerPlayerSlider(player)
     knobCorner.CornerRadius = UDim.new(1, 0)
     knobCorner.Parent = knob
 
-    -- Value label
     local valueLabel = Instance.new("TextLabel")
     valueLabel.Size = UDim2.new(0, 30, 1, 0)
     valueLabel.Position = UDim2.new(1, -30, 0, 0)
@@ -650,7 +601,6 @@ local function createPerPlayerSlider(player)
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
     valueLabel.Parent = row
 
-    -- Dragging logic
     local dragging = false
     local function updateFromMouse(input)
         local relativeX = input.Position.X - bg.AbsolutePosition.X
@@ -685,15 +635,13 @@ local function createPerPlayerSlider(player)
         end
     end)
 
-    -- Store references for later updates
-    local sliderData = {
+    perPlayerSliderData[userId] = {
         player = player,
         fill = fill,
         knob = knob,
         valueLabel = valueLabel,
         bg = bg,
     }
-    perPlayerGroups[userId].SliderData = sliderData
 
     playersScrolling.CanvasSize = UDim2.new(0, 0, 0, playersLayout.AbsoluteContentSize.Y + 10)
 end
@@ -705,7 +653,8 @@ local function removePerPlayerSlider(player)
         perPlayerGroups[userId] = nil
         perPlayerBaseVolumes[userId] = nil
     end
-    -- Find and destroy the corresponding row
+    perPlayerSliderData[userId] = nil
+
     for _, child in ipairs(playersScrolling:GetChildren()) do
         if child:IsA("Frame") and child:FindFirstChild("TextLabel") and child.TextLabel.Text == player.Name then
             child:Destroy()
@@ -725,16 +674,11 @@ Players.PlayerRemoving:Connect(function(player)
     removePerPlayerSlider(player)
 end)
 
--- Initialize existing players
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= LocalPlayer then
         createPerPlayerSlider(player)
     end
 end
-
--- ==============================
--- 9. DISTANCE ENGINE UPDATE LOOP
--- ==============================
 
 local function updatePlayerVolume(player)
     local userId = player.UserId
@@ -764,10 +708,8 @@ local function updatePlayerVolume(player)
 end
 
 RunService.RenderStepped:Connect(function()
-    -- Master volume override
-    SoundService.MasterVolume = 1
+    setMasterVolumeSafe(1)
 
-    -- Update per-player volumes
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             updatePlayerVolume(player)
@@ -775,12 +717,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ==============================
--- 10. INITIAL VOLUMES
--- ==============================
-
 VoiceMaskGroup.Volume = 0.5
 GameAudioGroup.Volume = 0.5
 MusicGroup.Volume = 0.5
 SFXGroup.Volume = 0.5
-
